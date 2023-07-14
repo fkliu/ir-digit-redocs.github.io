@@ -1,7 +1,0 @@
-digit
-=====
-
-.. toctree::
-   :maxdepth: 4
-
-   digit

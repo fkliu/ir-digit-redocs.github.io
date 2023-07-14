@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>digit.query &mdash; IR-DIGIT REDOCS v1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            IR-DIGIT REDOCS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">IR-DIGIT REDOCS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">digit.query</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for digit.query</h1><div class="highlight"><pre>
+<span></span><span class="c1"># 查询类，获取</span>
+<span class="c1"># data, card，user, self, websetting, cache的查询</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">.setting</span> <span class="kn">import</span> <span class="n">INTERFACE_PATH</span><span class="p">,</span><span class="n">DATA_STORAGE_TYPE</span><span class="p">,</span> <span class="n">DATA_DATA_TYPE</span><span class="p">,</span> <span class="n">DATA_LANGUAGE</span><span class="p">,</span> <span class="n">DATA_TASK_TYPE</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">.info</span> <span class="kn">import</span> <span class="n">Information</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+
+<div class="viewcode-block" id="QueryDigit"><a class="viewcode-back" href="../../source/digit.html#digit.query.QueryDigit">[docs]</a><span class="k">class</span> <span class="nc">QueryDigit</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="n">Information</span><span class="p">()</span><span class="o">.</span><span class="n">get_api_token</span><span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span> <span class="o">=</span> <span class="n">api_token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_path</span> <span class="o">=</span> <span class="n">INTERFACE_PATH</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;card&#39;</span><span class="p">,</span> <span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="s1">&#39;account&#39;</span><span class="p">,</span> <span class="s1">&#39;websetting&#39;</span><span class="p">,</span><span class="s1">&#39;dataid&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="p">{</span><span class="n">api_type</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">INTERFACE_PATH</span><span class="si">}</span><span class="s2">/api/</span><span class="si">{</span><span class="n">api_type</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="k">for</span> <span class="n">api_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_types</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">brief</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;data_id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="p">],</span>
+            <span class="s2">&quot;card&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;card_id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="p">],</span>
+            <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;real_name&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;account&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;real_name&#39;</span><span class="p">,</span> <span class="s1">&#39;email&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;websetting&quot;</span><span class="p">:[],</span>
+            <span class="s2">&quot;dataid&quot;</span><span class="p">:[</span><span class="s1">&#39;data_id&#39;</span><span class="p">]</span>
+
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_get_all_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_type</span><span class="p">):</span>
+        <span class="c1"># api_type 取值为data, card, user,account, websetting</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_request</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># 重复请求最大次数</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 每次获取新的数据都需要将之前的错误清空</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">api_type</span><span class="p">)</span>
+        <span class="c1"># url = &#39;http://127.0.0.1:8000/api/user/&#39;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;api-token&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span><span class="p">}</span>
+
+        <span class="k">while</span> <span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>  <span class="c1"># 循环调用接口，避免因为网络故障导致的请求失败</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">status_code</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span>
+            <span class="k">if</span> <span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="n">max_request</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;status code: </span><span class="si">{</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>  <span class="c1"># 将获取的数据存入queryset中</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># 请求成功了</span>
+
+    <span class="k">def</span> <span class="nf">_get_single_resource</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+        <span class="c1"># 当api_type = dataid时， id表示的可能是data_id，也可能是name</span>
+        <span class="n">status_code</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_request</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># 重复请求最大次数</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 每次获取新的数据都需要将之前的错误清空</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">api_type</span><span class="p">)</span><span class="si">}{</span><span class="nb">id</span><span class="si">}</span><span class="s2">/&quot;</span>
+
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;api-token&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_token</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">api_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;card&#39;</span><span class="p">,</span> <span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="s1">&#39;dataid&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">api_type</span><span class="si">}</span><span class="s2">&#39;的值只能为[&#39;data&#39;、&#39;card&#39;、&#39;user&#39;,&#39;dataid]四者之一&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">while</span> <span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>  <span class="c1"># 循环调用接口，避免因为网络故障导致的请求失败</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">status_code</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span>
+
+            <span class="k">if</span> <span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="n">max_request</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;status code: </span><span class="si">{</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span> <span class="o">=</span> <span class="p">[</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)]</span>  <span class="c1"># 将获取的数据存入queryset中</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># 请求成功了</span>
+
+    <span class="c1"># 美化输出</span>
+    <span class="k">def</span> <span class="nf">_pretty_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">api_type</span> <span class="o">!=</span> <span class="s2">&quot;websetting&quot;</span><span class="p">:</span>
+            <span class="n">briefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">brief</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">api_type</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">briefs</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">resource</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">briefs</span><span class="p">]))</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    已经写好获取两种类型的数据函数，下面是用户请求，选择是否输出details&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="QueryDigit.get_resources"><a class="viewcode-back" href="../../source/digit.html#digit.query.QueryDigit.get_resources">[docs]</a>    <span class="k">def</span> <span class="nf">get_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_single_resource</span><span class="p">(</span><span class="n">api_type</span><span class="o">=</span><span class="n">api_type</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_resources</span><span class="p">(</span><span class="n">api_type</span><span class="o">=</span><span class="n">api_type</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">detail</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_print</span><span class="p">(</span><span class="n">api_type</span><span class="o">=</span><span class="n">api_type</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">queryset</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">queryset</span></div>
+
+
+
+<div class="viewcode-block" id="QueryDigit.get_category"><a class="viewcode-back" href="../../source/digit.html#digit.query.QueryDigit.get_category">[docs]</a>    <span class="k">def</span> <span class="nf">get_category</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cats</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;storage_type&#39;</span><span class="p">,</span> <span class="s1">&#39;data_type&#39;</span><span class="p">,</span> <span class="s1">&#39;language&#39;</span><span class="p">,</span> <span class="s1">&#39;task_type&#39;</span><span class="p">,</span> <span class="p">]</span>
+        <span class="n">cats_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">DATA_STORAGE_TYPE</span><span class="p">,</span> <span class="n">DATA_DATA_TYPE</span><span class="p">,</span> <span class="n">DATA_LANGUAGE</span><span class="p">,</span> <span class="n">DATA_TASK_TYPE</span><span class="p">]</span>
+        <span class="n">category</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">cats_name</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cats</span><span class="p">)}</span>
+        <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">category</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, FKLiu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

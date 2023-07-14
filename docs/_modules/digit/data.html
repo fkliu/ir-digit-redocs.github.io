@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>digit.data &mdash; IR-DIGIT REDOCS v1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            IR-DIGIT REDOCS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">IR-DIGIT REDOCS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">digit.data</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for digit.data</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os.path</span>
+
+<span class="kn">from</span> <span class="nn">.info</span> <span class="kn">import</span> <span class="n">Information</span>
+<span class="kn">from</span> <span class="nn">.setting</span> <span class="kn">import</span> <span class="n">CACHE_PATH</span><span class="p">,</span> <span class="n">INTERFACE_PATH</span><span class="p">,</span><span class="n">DATA_STORAGE_TYPE</span><span class="p">,</span> <span class="n">DATA_DATA_TYPE</span><span class="p">,</span> <span class="n">DATA_LANGUAGE</span><span class="p">,</span> <span class="n">DATA_TASK_TYPE</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">.query</span> <span class="kn">import</span> <span class="n">QueryDigit</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+
+
+<span class="kn">import</span> <span class="nn">importlib.util</span>
+
+
+<div class="viewcode-block" id="find_py"><a class="viewcode-back" href="../../source/digit.html#digit.data.find_py">[docs]</a><span class="k">def</span> <span class="nf">find_py</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="c1"># 获取指定路径下的所有文件</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># 检查是否存在 __init__.py 文件，如果不存在则创建</span>
+    <span class="n">init_file</span> <span class="o">=</span> <span class="s2">&quot;__init__.py&quot;</span>
+    <span class="k">if</span> <span class="n">init_file</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">init_file</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="c1"># 查找名为 &quot;code.py&quot; 的文件</span>
+    <span class="k">if</span> <span class="s2">&quot;code.py&quot;</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;code&quot;</span>
+
+    <span class="c1"># 判断是否只有一个py文件</span>
+    <span class="n">py_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">file</span> <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.py&quot;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">py_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">py_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="check_config"><a class="viewcode-back" href="../../source/digit.html#digit.data.check_config">[docs]</a><span class="k">def</span> <span class="nf">check_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">qd</span><span class="p">):</span>
+    <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">fn</span><span class="o">!=</span><span class="s2">&quot;config.json&quot;</span><span class="p">:</span>
+        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;config文件名错误，必须为config.json&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">errors</span>
+
+
+    <span class="n">cats</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;storage_type&#39;</span><span class="p">,</span> <span class="s1">&#39;data_type&#39;</span><span class="p">,</span> <span class="s1">&#39;language&#39;</span><span class="p">,</span> <span class="s1">&#39;task_type&#39;</span><span class="p">,</span> <span class="p">]</span>
+    <span class="n">cats_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">DATA_STORAGE_TYPE</span><span class="p">,</span> <span class="n">DATA_DATA_TYPE</span><span class="p">,</span> <span class="n">DATA_LANGUAGE</span><span class="p">,</span> <span class="n">DATA_TASK_TYPE</span><span class="p">]</span>
+    <span class="n">category</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">cats_name</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cats</span><span class="p">)}</span>
+
+
+    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="s1">&#39;url_or_path&#39;</span><span class="p">,</span><span class="s1">&#39;storage_type&#39;</span><span class="p">,</span><span class="s1">&#39;data_type&#39;</span><span class="p">,</span><span class="s1">&#39;language&#39;</span><span class="p">,</span><span class="s1">&#39;task_type&#39;</span><span class="p">,</span><span class="s1">&#39;description&#39;</span><span class="p">,</span><span class="s1">&#39;tags&#39;</span><span class="p">]</span>
+
+    <span class="n">fields_type</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+        <span class="s1">&#39;url_or_path&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+        <span class="s1">&#39;storage_type&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+        <span class="s1">&#39;data_type&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+        <span class="s1">&#39;language&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+        <span class="s1">&#39;task_type&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span>
+        <span class="s1">&#39;description&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span>
+        <span class="s1">&#39;tags&#39;</span><span class="p">:</span><span class="nb">list</span>
+    <span class="p">}</span>
+
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">缺失&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">field</span><span class="p">])</span> <span class="o">!=</span> <span class="n">fields_type</span><span class="p">[</span><span class="n">field</span><span class="p">]:</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">字段值格式错误，应为</span><span class="si">{</span><span class="n">fields_type</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="si">}</span><span class="s2">, 实际为</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">field</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">category</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;字段</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">的值为</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="n">field</span><span class="p">]</span><span class="si">}</span><span class="s2">,不在规定类型的数字代号范围中:</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">category</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">errors</span></div>
+
+
+
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">Information</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qd</span> <span class="o">=</span> <span class="n">QueryDigit</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_id</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DD</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="c1"># 存放加载的数据类</span>
+
+
+    <span class="k">def</span> <span class="nf">_get_data_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data_id_or_name</span><span class="p">):</span>
+        <span class="c1"># 检测是否已经缓存,</span>
+        <span class="n">qs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qd</span><span class="o">.</span><span class="n">get_resources</span><span class="p">(</span><span class="n">api_type</span><span class="o">=</span><span class="s2">&quot;dataid&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">data_id_or_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">qs</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;data_id_or_name = </span><span class="si">{</span><span class="n">data_id_or_name</span><span class="si">}</span><span class="s2">的资源不存在&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">data_id</span> <span class="o">=</span> <span class="n">qs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data_id&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data_id</span>
+
+<div class="viewcode-block" id="Data.load"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_id_or_name</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">imp_class</span><span class="o">=</span><span class="s2">&quot;DigitData&quot;</span><span class="p">):</span>
+        <span class="n">data_id</span> <span class="o">=</span> <span class="n">data_id_or_name</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="n">data_id_or_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="n">data_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_data_id</span><span class="p">(</span><span class="n">data_id_or_name</span><span class="o">=</span><span class="n">data_id_or_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="n">data_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;路径不存在：</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_id</span> <span class="o">=</span> <span class="n">data_id</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="n">find_py</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">code</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;未在该路径下找到代码文件&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+
+        <span class="c1"># 找到路径下的代码文件后</span>
+        <span class="c1"># 动态加载</span>
+        <span class="c1"># 添加路径，加载code.py文件，</span>
+        <span class="n">imp_class</span> <span class="o">=</span> <span class="n">imp_class</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="n">module_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">code</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;.py&quot;</span>
+        <span class="n">module_name</span> <span class="o">=</span> <span class="n">code</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">module_path</span><span class="p">)</span>
+        <span class="n">imp_module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">imp_module</span><span class="p">)</span>
+
+        <span class="c1"># ip_module = __import__(&#39;code&#39;)</span>
+        <span class="n">clss</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">imp_module</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">clss</span><span class="p">)</span>
+        <span class="c1"># 判断DigitData类是否存在</span>
+
+        <span class="n">clss_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">cls_name</span><span class="p">:</span><span class="n">cls_class</span> <span class="k">for</span> <span class="n">cls_name</span><span class="p">,</span> <span class="n">cls_class</span> <span class="ow">in</span> <span class="n">clss</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">imp_class</span> <span class="ow">in</span> <span class="n">clss_dict</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;code.py文件中DigitData类不存在,请检查&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmro</span><span class="p">(</span><span class="n">clss_dict</span><span class="p">[</span><span class="n">imp_class</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;TableData&#39;</span><span class="p">,</span> <span class="s1">&#39;LabelData&#39;</span><span class="p">,</span> <span class="s1">&#39;DocData&#39;</span><span class="p">,</span> <span class="s1">&#39;ImageData&#39;</span><span class="p">,</span>
+                                                  <span class="s1">&#39;AudioData&#39;</span><span class="p">,</span>
+                                                  <span class="s1">&#39;VideoData&#39;</span><span class="p">,</span> <span class="s1">&#39;GraphData&#39;</span><span class="p">]:</span>
+
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;DigitData类不是规定类 TableData, LabelData, DocData, ImageData, AudioData, VideoData, GraphData 的子类&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># 加载DIgitData类</span>
+        <span class="n">DD</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">imp_module</span><span class="p">,</span> <span class="n">imp_class</span><span class="p">)</span>  <span class="c1"># 获取类</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DD</span> <span class="o">=</span> <span class="n">DD</span><span class="p">(</span><span class="n">data_id</span><span class="o">=</span><span class="n">data_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">DD</span>  <span class="c1"># 实例化类并返回</span></div>
+
+<div class="viewcode-block" id="Data.run"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DD</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+        <span class="c1"># 自定义计算</span>
+
+
+
+<div class="viewcode-block" id="Data.upload"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data.upload">[docs]</a>    <span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">md_instruction_path</span><span class="p">,</span><span class="n">config_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param config_file:</span>
+<span class="sd">        :param md_instruction_file:</span>
+<span class="sd">        :param file_upload:</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">        :return: data_id</span>
+<span class="sd">        两种上传方式， 第一种文文件上传，第二种为字典格式上传</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span>  <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">INTERFACE_PATH</span><span class="si">}</span><span class="s2">/api/data/&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;api-token&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get_api_token</span><span class="p">()}</span>
+
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">check_config</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="n">config_path</span><span class="p">,</span> <span class="n">qd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+
+        <span class="n">files</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;cj&#39;</span><span class="p">:</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;md&#39;</span><span class="p">:</span> <span class="nb">open</span><span class="p">(</span><span class="n">md_instruction_path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span><span class="mi">200</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;错误，错误代码为：</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span><span class="o">!=</span><span class="mi">200</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;上传成功&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">content</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span></div>
+
+
+
+
+
+
+
+
+<div class="viewcode-block" id="Data.delete"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data_id_or_name</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
+
+        <span class="n">data_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_data_id</span><span class="p">(</span><span class="n">data_id_or_name</span><span class="o">=</span><span class="n">data_id_or_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data_id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="n">INTERFACE_PATH</span> <span class="o">+</span> <span class="s2">&quot;/api/data/&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;api-token&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">get_api_token</span><span class="p">()}</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span><span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">204</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;删除时出现错误,错误代码</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;msg&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="c1"># 成功删除</span></div>
+
+<div class="viewcode-block" id="Data.find_path"><a class="viewcode-back" href="../../source/digit.html#digit.data.Data.find_path">[docs]</a>    <span class="k">def</span> <span class="nf">find_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_id</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;data_id为空&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">CACHE_PATH</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_id</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;当前加载的代码所在路径为：</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">path</span></div></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, FKLiu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
